@@ -12,11 +12,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //Hide top bar
+        //Hide top bar or modify it
         supportActionBar?.let { actionBar ->
-            actionBar.hide()
-//            actionBar.title = "Sketches"
-//            actionBar.subtitle= "Jose Luis Navío Mendoza"
+//            actionBar.hide()
+            actionBar.title = "Sketches"
+            actionBar.subtitle= "Jose Luis Navío Mendoza"
         }
         //Binding
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         dialogBinding.labelComment.text = "Nombre del archivo: "
 
         val alertDialog = AlertDialog.Builder(this)
-            .setTitle("Guardar imagen")
+            .setTitle("GUARDAR IMAGEN")
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { _, _ ->
                 fileName = dialogBinding.fieldFileName.text.toString()

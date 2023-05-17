@@ -89,7 +89,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
     fun addImageToGallery(name: String) {
         val saveDialog = AlertDialog.Builder(context)
-        saveDialog.setTitle("Añadir a Galería")
+        saveDialog.setTitle("AÑADIR A GALERÍA")
         saveDialog.setMessage("¿Guardar la imagen en la galería?")
         saveDialog.setPositiveButton("Guardar") { _: DialogInterface?, _: Int ->
             val bmp: Bitmap = generateBitmap()
@@ -137,7 +137,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         val canvas = Canvas(bitmap)
         draw(canvas)
 
-        val fileName = "$name.png"
+        val fileName = name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
+//      val fileName = "$name$PNG_EXTENSION"
         val fileDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val file = File(fileDir, fileName)
 
@@ -156,5 +157,10 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
         }
         return null
+    }
+
+    companion object{
+
+        private const val PNG_EXTENSION = ".png"
     }
 }
