@@ -32,6 +32,13 @@
             android:src="@drawable/icon_delete_24"/>
 
         <ImageButton
+            android:id="@+id/button_add_to_gallery"
+            android:layout_width="@dimen/image_button_width"
+            android:layout_height="@dimen/image_button_height"
+            android:layout_marginHorizontal="@dimen/margin_medium"
+            android:src="@drawable/icon_photo_24"/>
+
+        <ImageButton
             android:id="@+id/button_save"
             android:layout_width="@dimen/image_button_width"
             android:layout_height="@dimen/image_button_height"

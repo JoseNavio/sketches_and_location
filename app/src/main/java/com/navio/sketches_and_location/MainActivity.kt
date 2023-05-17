@@ -46,12 +46,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setButtons() {
-
+        //Clears window
         binding.buttonClear.setOnClickListener {
             binding.drawingCanvas.clear()
         }
+        //Stores file in internal storage
         binding.buttonSave.setOnClickListener {
             launchNameDialog()
+        }
+        //Stores file in gallery
+        binding.buttonAddToGallery.setOnClickListener {
+            binding.drawingCanvas.addImageToGallery("provisional")
         }
     }
 
@@ -59,7 +64,7 @@ class MainActivity : AppCompatActivity() {
 
         //If name is blank --> "imagen" else "name"
         val fileName = name.ifBlank { "imagen" }
-        
+
         val savedFile = binding.drawingCanvas.saveDrawing(fileName)
         if (savedFile != null) {
             Toast.makeText(this, "Imagen guardada ${savedFile.name}", Toast.LENGTH_SHORT).show()
