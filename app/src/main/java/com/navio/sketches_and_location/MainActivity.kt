@@ -1,6 +1,7 @@
 package com.navio.sketches_and_location
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -24,7 +25,34 @@ class MainActivity : AppCompatActivity() {
         setButtons()
     }
 
-    private fun launchNameDialog(): String {
+    private fun setButtons() {
+        //Clears window
+        binding.buttonClear.setOnClickListener {
+            binding.drawingCanvas.clear()
+        }
+        //Stores file in app internal storage
+        //Use a callback to get the names instead of setting both Dialogs
+        binding.buttonSave.setOnClickListener {
+
+            showNameDialog(object : OnNamePassed{
+
+                override fun onNamePassed(name: String) {
+                    saveAfterGettingName(name)
+                }
+            })
+        }
+        //Stores file in gallery
+        binding.buttonAddToGallery.setOnClickListener {
+
+            showNameDialog(object : OnNamePassed{
+
+                override fun onNamePassed(name: String) {
+                    binding.drawingCanvas.addImageToGallery(name)
+                }
+            })
+        }
+    }
+    private fun showNameDialog(callback: OnNamePassed) {
 
         val dialogBinding: DialogFileNameBinding = DialogFileNameBinding.inflate(layoutInflater)
         var fileName = "imagen"
@@ -36,30 +64,13 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogBinding.root)
             .setPositiveButton("Guardar") { _, _ ->
                 fileName = dialogBinding.fieldFileName.text.toString()
-                saveAfterGettingName(fileName)
+                callback.onNamePassed(fileName)
+
             }
             .setNegativeButton("Cancelar", null)
             .create()
-
         alertDialog.show()
-        return fileName
     }
-
-    private fun setButtons() {
-        //Clears window
-        binding.buttonClear.setOnClickListener {
-            binding.drawingCanvas.clear()
-        }
-        //Stores file in internal storage
-        binding.buttonSave.setOnClickListener {
-            launchNameDialog()
-        }
-        //Stores file in gallery
-        binding.buttonAddToGallery.setOnClickListener {
-            binding.drawingCanvas.addImageToGallery("provisional")
-        }
-    }
-
     private fun saveAfterGettingName(name: String) {
 
         //If name is blank --> "imagen" else "name"
@@ -76,4 +87,8 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
     }
+}
+//Pass the name from Dialog to button click listener event
+interface OnNamePassed{
+    fun onNamePassed(name : String)
 }
