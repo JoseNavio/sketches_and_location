@@ -6,46 +6,13 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.navio.sketches_and_location.drawing.DrawingView
-        android:id="@+id/drawing_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/linear_block_buttons"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/linear_block_buttons"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_margin="@dimen/margin_small"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageButton
-            android:id="@+id/button_clear"
-            android:layout_width="@dimen/image_button_width"
-            android:layout_height="@dimen/image_button_height"
-            android:layout_marginHorizontal="@dimen/margin_medium"
-            android:src="@drawable/icon_delete_24"/>
-
-        <ImageButton
-            android:id="@+id/button_add_to_gallery"
-            android:layout_width="@dimen/image_button_width"
-            android:layout_height="@dimen/image_button_height"
-            android:layout_marginHorizontal="@dimen/margin_medium"
-            android:src="@drawable/icon_photo_24"/>
-
-        <ImageButton
-            android:id="@+id/button_save"
-            android:layout_width="@dimen/image_button_width"
-            android:layout_height="@dimen/image_button_height"
-            android:layout_marginHorizontal="@dimen/margin_medium"
-            android:src="@drawable/icon_save_24"/>
-
-    </LinearLayout>
+   <androidx.fragment.app.FragmentContainerView
+       android:id="@+id/fragment_container_activity"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent"
+       app:layout_constraintEnd_toEndOf="parent"
+       app:layout_constraintStart_toStartOf="parent"
+       app:layout_constraintTop_toTopOf="parent"
+       app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

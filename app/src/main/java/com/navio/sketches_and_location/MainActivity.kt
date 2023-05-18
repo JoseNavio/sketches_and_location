@@ -1,93 +1,71 @@
 package com.navio.sketches_and_location
 
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.commit
 import com.navio.sketches_and_location.databinding.ActivityMainBinding
-import com.navio.sketches_and_location.databinding.DialogFileNameBinding
+import com.navio.sketches_and_location.fragments.FragmentLocation
+import com.navio.sketches_and_location.fragments.FragmentMenu
+import com.navio.sketches_and_location.fragments.FragmentSketches
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //Hide top bar or modify it
+        //Hide top bar or modify it --> Not visible
         supportActionBar?.let { actionBar ->
-//            actionBar.hide()
-            actionBar.title = "Sketches"
-            actionBar.subtitle= "Jose Luis Navío Mendoza"
+//          actionBar.hide()
+            actionBar.title = "Sketches and Location"
+            actionBar.subtitle = "Jose Luis Navío Mendoza"
         }
         //Binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        setButtons()
+
+        attachMenuFragment()
     }
+    //Replace fragments
+    //Launches menu fragment with a callback to listen which button has been click on it
+    private fun attachMenuFragment() {
 
-    private fun setButtons() {
-        //Clears window
-        binding.buttonClear.setOnClickListener {
-            binding.drawingView.clear()
-        }
-        //Stores file in app internal storage
-        //Use a callback to get the names instead of setting both Dialogs
-        binding.buttonSave.setOnClickListener {
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)//Let commit operations decide better operation's order
+            replace(
+                binding.fragmentContainerActivity.id,
+                FragmentMenu.newInstance(object : OnFragmentChosen {
+                    override fun onSketchesChosen() {
+                        attachSketchesFragment()
+                    }
 
-            showNameDialog(object : OnNamePassed{
-
-                override fun onNamePassed(name: String) {
-                    saveAfterGettingName(name)
-                }
-            })
-        }
-        //Stores file in gallery
-        binding.buttonAddToGallery.setOnClickListener {
-
-            showNameDialog(object : OnNamePassed{
-
-                override fun onNamePassed(name: String) {
-                    binding.drawingView.addImageToGallery(name)
-                }
-            })
+                    override fun onLocationChosen() {
+                        attachLocationFragment()
+                    }
+                })
+            )
         }
     }
-    private fun showNameDialog(callback: OnNamePassed) {
+    //Launches sketches fragment
+    private fun attachSketchesFragment() {
 
-        val dialogBinding: DialogFileNameBinding = DialogFileNameBinding.inflate(layoutInflater)
-        var fileName = "imagen"
-
-        dialogBinding.labelComment.text = "Nombre del archivo: "
-
-        val alertDialog = AlertDialog.Builder(this)
-            .setTitle("GUARDAR IMAGEN")
-            .setView(dialogBinding.root)
-            .setPositiveButton("Guardar") { _, _ ->
-                fileName = dialogBinding.fieldFileName.text.toString()
-                callback.onNamePassed(fileName)
-            }
-            .setNegativeButton("Cancelar", null)
-            .create()
-        alertDialog.show()
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)//Let commit operations decide better operation's order
+            replace(binding.fragmentContainerActivity.id, FragmentSketches.newInstance())
+            addToBackStack(null)
+        }
     }
-    private fun saveAfterGettingName(name: String) {
+    //Launches location fragment
+    private fun attachLocationFragment() {
 
-        //If name is blank --> "imagen" else "name"
-        val fileName = name.ifBlank { "imagen" }
-
-        val savedFile = binding.drawingView.saveDrawing(fileName)
-        if (savedFile != null) {
-            Toast.makeText(this, "Imagen guardada ${savedFile.name}", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(
-                this,
-                "La aplicación fallo al tratar de guardar la imagen",
-                Toast.LENGTH_SHORT
-            ).show()
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)//Let commit operations decide better operation's order
+            replace(binding.fragmentContainerActivity.id, FragmentLocation.newInstance())
+            addToBackStack(null)
         }
     }
 }
-//Pass the name from Dialog to button click listener event
-interface OnNamePassed{
-    fun onNamePassed(name : String)
+
+interface OnFragmentChosen {
+    fun onLocationChosen()
+    fun onSketchesChosen()
 }
