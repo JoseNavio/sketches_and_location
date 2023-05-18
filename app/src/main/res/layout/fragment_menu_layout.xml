@@ -4,24 +4,39 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/button_image_sketches"
-        android:layout_width="@dimen/image_button_width"
-        android:layout_height="@dimen/image_button_height"
-        android:layout_margin="@dimen/margin_medium"
-        android:src="@drawable/icon_draw_24"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <ImageButton
-        android:id="@+id/button_image_location"
-        android:layout_width="@dimen/image_button_width"
-        android:layout_height="@dimen/image_button_height"
-        android:layout_margin="@dimen/margin_medium"
-        android:src="@drawable/icon_location_24"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button_image_sketches" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/button_image_sketches"
+                android:layout_width="@dimen/image_button_width"
+                android:layout_height="@dimen/image_button_height"
+                android:layout_margin="@dimen/margin_medium"
+                android:src="@drawable/icon_draw_24" />
+
+            <ImageButton
+                android:id="@+id/button_image_location"
+                android:layout_width="@dimen/image_button_width"
+                android:layout_height="@dimen/image_button_height"
+                android:layout_margin="@dimen/margin_medium"
+                android:src="@drawable/icon_location_24" />
+
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/loading_animation"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:indeterminateTint="@color/purple_200"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
