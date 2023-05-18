@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
     private fun setButtons() {
         //Clears window
         binding.buttonClear.setOnClickListener {
-            binding.drawingCanvas.clear()
+            binding.drawingView.clear()
         }
         //Stores file in app internal storage
         //Use a callback to get the names instead of setting both Dialogs
@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
             showNameDialog(object : OnNamePassed{
 
                 override fun onNamePassed(name: String) {
-                    binding.drawingCanvas.addImageToGallery(name)
+                    binding.drawingView.addImageToGallery(name)
                 }
             })
         }
@@ -65,7 +65,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Guardar") { _, _ ->
                 fileName = dialogBinding.fieldFileName.text.toString()
                 callback.onNamePassed(fileName)
-
             }
             .setNegativeButton("Cancelar", null)
             .create()
@@ -76,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         //If name is blank --> "imagen" else "name"
         val fileName = name.ifBlank { "imagen" }
 
-        val savedFile = binding.drawingCanvas.saveDrawing(fileName)
+        val savedFile = binding.drawingView.saveDrawing(fileName)
         if (savedFile != null) {
             Toast.makeText(this, "Imagen guardada ${savedFile.name}", Toast.LENGTH_SHORT).show()
         } else {
