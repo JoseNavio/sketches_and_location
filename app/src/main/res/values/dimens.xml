@@ -2,7 +2,7 @@
 <resources>
     <dimen name="image_button_width">64dp</dimen>
     <dimen name="image_button_height">64dp</dimen>
-    <dimen name="margin_small">8dp</dimen>
-    <dimen name="margin_medium">16dp</dimen>
-    <dimen name="margin_large">32dp</dimen>
+    <dimen name="margin_small">6dp</dimen>
+    <dimen name="margin_medium">12dp</dimen>
+    <dimen name="margin_large">24dp</dimen>
 </resources>

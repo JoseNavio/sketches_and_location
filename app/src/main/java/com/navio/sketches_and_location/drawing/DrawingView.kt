@@ -10,9 +10,11 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
+import com.navio.sketches_and_location.fragments.OnScreenTouched
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -21,7 +23,18 @@ import java.io.OutputStream
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private val drawPaint: Paint = Paint()
+    private val textPaint: Paint = Paint()
     private val path: Path = Path()
+    //Flags
+    private var shouldDraw = false
+    private var shouldWrite = false
+    //Text
+    private var comment: String = "No"
+    private var xPosition: Float = 0f
+    private var yPosition: Float = 0f
+
+    //Listener
+    private lateinit var screenListener: OnScreenTouched
 
     init {
         isFocusable = true //Focusable view
@@ -30,21 +43,36 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         setupPaint()
     }
 
+    fun setupScreenListener(listener : OnScreenTouched){
+        screenListener = listener
+    }
+
     private fun setupPaint() {
+        //Stroke parameters
         drawPaint.color = Color.BLACK
         drawPaint.isAntiAlias = true //Softer, less pixelated edges
         drawPaint.strokeWidth = 8f
         drawPaint.style = Paint.Style.STROKE
         drawPaint.strokeJoin = Paint.Join.ROUND //Stroke body shape
         drawPaint.strokeCap = Paint.Cap.ROUND //Stroke end shape
+        //Text parameters
+        textPaint.color = Color.BLACK
+        textPaint.textSize = 64f
+        textPaint.textAlign = Paint.Align.LEFT
+        //Font and style
+        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawPath(path, drawPaint)
+        when {
+            shouldDraw -> drawOnCanvas(canvas)
+            shouldWrite -> writeOnCanvas(canvas)
+        }
     }
-
+    //todo Can use onTouch instead of onTouchEvent to handle writing?
     override fun onTouchEvent(event: MotionEvent): Boolean {
+
         val touchX = event.x
         val touchY = event.y
 
@@ -60,11 +88,11 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
             MotionEvent.ACTION_UP -> {
                 // Do any required actions when finger is lifted
-                //todo We can send a listener to disable button when screen is released
+                Log.d("Navio_OnDraw", "Levantado")
+                screenListener.onPositionXY(event.x, event.y)
             }
             else -> return false
         }
-
         // Force the view to redraw
         invalidate()
         return true
@@ -74,8 +102,28 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         path.reset()
         invalidate()
     }
+    fun startDrawing(){
+        shouldDraw = true
+        //Reset the path in case the touch event registered something before
+        path.reset()
+    }
+    fun startWriting(text:String, x:Float, y:Float){
+        comment = text
+        xPosition = x
+        yPosition = y
+        shouldDraw = false
+        shouldWrite = true
+    }
+    private fun drawOnCanvas(canvas: Canvas){
+        canvas.drawPath(path, drawPaint)
+    }
+    private fun writeOnCanvas(canvas: Canvas){
+
+        canvas.drawText(comment, xPosition, yPosition, textPaint)
+        shouldWrite = false
+    }
     //Generates a bitmap with the current sketch
-    private fun generateBitmap(): Bitmap{
+    private fun generateBitmap(): Bitmap {
 
         //Width and Height take View's dimensions
         //Bitmap.Config.ARGB_8888 --> 32 bits, full color and transparency on background
@@ -112,7 +160,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 imageUri?.let {
                     outputStream = resolver.openOutputStream(it)
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                    Toast.makeText(context, "La imagen se guardó en la galería", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "La imagen se guardó en la galería", Toast.LENGTH_SHORT)
+                        .show()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -131,13 +180,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         saveDialog.setNegativeButton("Cancelar") { dialog: DialogInterface, _: Int -> dialog.cancel() }
         saveDialog.show()
     }
+
     fun saveDrawing(name: String): File? {
 
         val bitmap = generateBitmap()
         val canvas = Canvas(bitmap)
         draw(canvas)
 
-        val fileName = name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
+        val fileName =
+            name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
 //      val fileName = "$name$PNG_EXTENSION"
         val fileDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val file = File(fileDir, fileName)
@@ -159,8 +210,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return null
     }
 
-    companion object{
-
+    companion object {
         private const val PNG_EXTENSION = ".png"
     }
 }
