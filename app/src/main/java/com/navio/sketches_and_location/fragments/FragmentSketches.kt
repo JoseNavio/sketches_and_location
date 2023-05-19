@@ -20,7 +20,6 @@ class FragmentSketches : Fragment() {
         binding = FragmentSketchesLayoutBinding.inflate(layoutInflater)
         setButtons()
     }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -31,11 +30,11 @@ class FragmentSketches : Fragment() {
             title = "Sketches and Location"
             subtitle = "Sketches"
         }
-
         return binding.root
     }
     //Set up layout buttons
     private fun setButtons() {
+
         //Clears window
         binding.buttonClear.setOnClickListener {
             binding.drawingView.clear()

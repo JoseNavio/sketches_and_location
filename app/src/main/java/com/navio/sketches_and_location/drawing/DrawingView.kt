@@ -8,8 +8,11 @@ import android.graphics.*
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
@@ -29,29 +32,39 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             true //Gain focus and handle touch events without requiring an explicit click or focus change event.
         setupPaint()
     }
-
+    //Sets stroke style
     private fun setupPaint() {
         drawPaint.color = Color.BLACK
         drawPaint.isAntiAlias = true //Softer, less pixelated edges
-        drawPaint.strokeWidth = 8f
+        drawPaint.strokeWidth = 12f
         drawPaint.style = Paint.Style.STROKE
         drawPaint.strokeJoin = Paint.Join.ROUND //Stroke body shape
         drawPaint.strokeCap = Paint.Cap.ROUND //Stroke end shape
     }
-
+    //It's call every time the screen is touched
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawPath(path, drawPaint)
     }
-
+    //Allows long clicks actions
+    private val longClickRunnable = Runnable {
+        addImageToGallery("image")
+    }
+    private val handler = Handler(Looper.getMainLooper())
     override fun onTouchEvent(event: MotionEvent): Boolean {
+
         val touchX = event.x
         val touchY = event.y
+
+        //Stop tracking touch event, so if the counter didn't reach 2 seconds nothing happens
+        handler.removeCallbacks(longClickRunnable)
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 //Sets the initial point of the path
                 path.moveTo(touchX, touchY)
+                //Start tracking touch event to detect long click
+                handler.postDelayed(longClickRunnable, 2000)
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
@@ -59,23 +72,21 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 path.lineTo(touchX, touchY)
             }
             MotionEvent.ACTION_UP -> {
-                // Do any required actions when finger is lifted
-                //todo We can send a listener to disable button when screen is released
+                //Something to do when the screen is not touched anymore
             }
             else -> return false
         }
-
         // Force the view to redraw
         invalidate()
         return true
     }
-
+    //Clean the canvas
     fun clear() {
         path.reset()
         invalidate()
     }
     //Generates a bitmap with the current sketch
-    private fun generateBitmap(): Bitmap{
+    private fun generateBitmap(): Bitmap {
 
         //Width and Height take View's dimensions
         //Bitmap.Config.ARGB_8888 --> 32 bits, full color and transparency on background
@@ -87,6 +98,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         this.draw(canvas) // Draw the content of DrawingView onto the canvas
         return bitmap
     }
+    //Save image in gallery
     fun addImageToGallery(name: String) {
         val saveDialog = AlertDialog.Builder(context)
         saveDialog.setTitle("AÑADIR A GALERÍA")
@@ -112,7 +124,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 imageUri?.let {
                     outputStream = resolver.openOutputStream(it)
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                    Toast.makeText(context, "La imagen se guardó en la galería", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "La imagen se guardó en la galería", Toast.LENGTH_SHORT)
+                        .show()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -131,13 +144,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         saveDialog.setNegativeButton("Cancelar") { dialog: DialogInterface, _: Int -> dialog.cancel() }
         saveDialog.show()
     }
+    //Save image in internal storage
     fun saveDrawing(name: String): File? {
 
         val bitmap = generateBitmap()
         val canvas = Canvas(bitmap)
         draw(canvas)
 
-        val fileName = name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
+        val fileName =
+            name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
 //      val fileName = "$name$PNG_EXTENSION"
         val fileDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val file = File(fileDir, fileName)
@@ -159,7 +174,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return null
     }
 
-    companion object{
+    companion object {
 
         private const val PNG_EXTENSION = ".png"
     }
