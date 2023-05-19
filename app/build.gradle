@@ -47,4 +47,8 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     //Fragments
     implementation("androidx.fragment:fragment-ktx:1.5.4")
+    //Google maps
+    implementation "com.google.android.gms:play-services-maps:18.1.0"
+    //Maps tools
+    implementation 'com.google.maps.android:android-maps-utils:0.6.2'
 }
