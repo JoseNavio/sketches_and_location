@@ -3,7 +3,7 @@ package com.navio.sketches_and_location.fragments
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.GONE
+import android.view.View.*
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
@@ -21,10 +21,6 @@ class FragmentMenu(private val listener: OnFragmentChosen) : Fragment() {
         super.onCreate(savedInstanceState)
         binding = FragmentMenuLayoutBinding.inflate(layoutInflater)
         setButtons()
-        //Animations
-        fadeIn(binding.buttonImageSketches)
-        fadeIn(binding.buttonImageLocation)
-        fadeOut(binding.loadingAnimation)
     }
 
     override fun onCreateView(
@@ -36,6 +32,11 @@ class FragmentMenu(private val listener: OnFragmentChosen) : Fragment() {
             title = "Sketches and Location"
             subtitle = "Menú"
         }
+        //Animations
+        fadeIn(binding.buttonImageSketches)
+        fadeIn(binding.buttonImageLocation)
+        //Progress bar
+        fadeOut(binding.loadingAnimation)
         return binding.root
     }
 
@@ -58,10 +59,11 @@ class FragmentMenu(private val listener: OnFragmentChosen) : Fragment() {
         animation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationStart(animation: Animation?) {
                 // Animation start
+                view.visibility = VISIBLE
             }
             override fun onAnimationEnd(animation: Animation?) {
                 // Animation end
-                view.visibility = View.INVISIBLE // or View.GONE to make it completely hidden
+                view.visibility = INVISIBLE // or View.GONE to make it completely hidden
             }
             override fun onAnimationRepeat(animation: Animation?) {
                 // Animation repeat
