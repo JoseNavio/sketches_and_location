@@ -9,12 +9,14 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import com.navio.sketches_and_location.fragments.OnScreenTouched
+import com.navio.sketches_and_location.fragments.OnTextPassed
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
+
     private val drawPaint: Paint = Paint()
     private val textPaint: Paint = Paint()
     private val path: Path = Path()
@@ -25,8 +27,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     //Text
     private var comment: String = "No"
-    private var xPosition: Float = 0f
-    private var yPosition: Float = 0f
+    private var x: Float = 0f
+    private var y: Float = 0f
 
     //Listener
     private lateinit var screenListener: OnScreenTouched
@@ -61,12 +63,13 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         when {
+
             shouldDraw -> drawOnCanvas(canvas)
             shouldWrite -> writeOnCanvas(canvas)
         }
     }
 
-    //todo Can use onTouch instead of onTouchEvent to handle writing?
+    //Watches where screen has been touched to draw on it
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
         val touchX = event.x
@@ -83,9 +86,13 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 path.lineTo(touchX, touchY)
             }
             MotionEvent.ACTION_UP -> {
-                // Do any required actions when finger is lifted
-                Log.d("Navio_OnDraw", "Levantado")
-                screenListener.onPositionXY(event.x, event.y)
+                //Do any required actions when finger is lifted
+                screenListener.onScreenClicked(event.x, event.y, object : OnTextPassed {
+
+                    override fun onTextPassed(comment: String) {
+                        startWriting(x, y, comment)
+                    }
+                })
             }
             else -> return false
         }
@@ -101,14 +108,22 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     fun startDrawing() {
         shouldDraw = true
+        shouldWrite = false
         //Reset the path in case the touch event registered something before
         path.reset()
     }
 
-    fun startWriting(text: String, x: Float, y: Float) {
-        comment = text
-        xPosition = x
-        yPosition = y
+    fun startWriting(){
+        shouldDraw = false
+        shouldWrite = true
+    }
+    
+    fun startWriting(x: Float, y: Float, comment: String) {
+        //Set local parameters first
+        this.x = x
+        this.y = y
+        this.comment = comment
+
         shouldDraw = false
         shouldWrite = true
     }
@@ -118,7 +133,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     private fun writeOnCanvas(canvas: Canvas) {
-        canvas.drawText(comment, xPosition, yPosition, textPaint)
+
+        canvas.drawText(comment, x, y, textPaint)
         shouldWrite = false
     }
 
@@ -162,4 +178,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     companion object {
         private const val PNG_EXTENSION = ".png"
     }
+}
+interface OnScreenClicked {
+    fun onPositionClicked(x: Float, y: Float)
 }

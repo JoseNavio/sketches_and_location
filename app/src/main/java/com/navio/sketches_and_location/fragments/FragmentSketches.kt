@@ -2,8 +2,6 @@ package com.navio.sketches_and_location.fragments
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -42,7 +40,6 @@ class FragmentSketches : Fragment() {
             title = "Sketches and Location"
             subtitle = "Sketches"
         }
-
         return binding.root
     }
 
@@ -50,10 +47,12 @@ class FragmentSketches : Fragment() {
     private fun initViews() {
         //todo can you change this in order to just ask with a method
         binding.drawingView.setupScreenListener(object : OnScreenTouched {
-            override fun onPositionXY(x: Float, y: Float) {
+
+            override fun onScreenClicked(x: Float, y: Float, commentListener: OnTextPassed) {
                 Log.d("Navio_Position", "Position: $x , $y")
                 lastX = x
                 lastY = y
+                showNameDialog(commentListener)
             }
         })
     }
@@ -75,9 +74,9 @@ class FragmentSketches : Fragment() {
             //todo Try to save changes into image...
             val imageBitmap = BitmapFactory.decodeResource(resources, R.raw.tiger)
 
-            showNameDialog(object : OnNamePassed {
+            showNameDialog(object : OnTextPassed {
 
-                override fun onNamePassed(name: String) {
+                override fun onTextPassed(name: String) {
                     saveAfterGettingName(name, imageBitmap)
                 }
             })
@@ -89,38 +88,22 @@ class FragmentSketches : Fragment() {
         }
         //Introduces a text on canvas
         binding.buttonText.setOnClickListener {
-
-            var message: String
-            var xPosition: Float
-            var yPosition: Float
-
-            writeComment(object : OnParametersChosen {
-                override fun onCommentChosen(comment: String) {
-                    message = comment
-                }
-
-                override fun onPositionChosen(x: Float, y: Float) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun onParametersChosen() {
-                    TODO("Not yet implemented")
-                }
-            })
+            //todo Need to call the startWriting
+            binding.drawingView.startWriting()
         }
     }
 
-    private fun writeComment(callback: OnParametersChosen) {
+//    private fun writeComment(callback: OnParametersChosen) {
+//
+//        showTextDialog { comment ->
+//            callback.onCommentChosen(comment)
+//            Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
+//        }
+//
+////        binding.drawingView.startWriting()
+//    }
 
-        showTextDialog { comment ->
-            callback.onCommentChosen(comment)
-            Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
-        }
-
-//        binding.drawingView.startWriting()
-    }
-
-    private fun showNameDialog(callback: OnNamePassed) {
+    private fun showNameDialog(callback: OnTextPassed) {
 
         val dialogFileBinding: DialogFileNameBinding = DialogFileNameBinding.inflate(layoutInflater)
         var fileName = "imagen"
@@ -133,7 +116,7 @@ class FragmentSketches : Fragment() {
                 .setView(dialogFileBinding.root)
                 .setPositiveButton("Guardar") { _, _ ->
                     fileName = dialogFileBinding.fieldFileName.text.toString()
-                    callback.onNamePassed(fileName)
+                    callback.onTextPassed(fileName)
                 }
                 .setNegativeButton("Cancelar", null)
                 .create()
@@ -192,16 +175,10 @@ class FragmentSketches : Fragment() {
 }
 
 //Pass the name from Dialog to button click listener event
-interface OnNamePassed {
-    fun onNamePassed(name: String)
+interface OnTextPassed {
+    fun onTextPassed(name: String)
 }
 
 interface OnScreenTouched {
-    fun onPositionXY(x: Float, y: Float)
-}
-
-interface OnParametersChosen {
-    fun onCommentChosen(comment: String)
-    fun onPositionChosen(x: Float, y: Float)
-    fun onParametersChosen()
+    fun onScreenClicked(x: Float, y: Float, comment: OnTextPassed)
 }
