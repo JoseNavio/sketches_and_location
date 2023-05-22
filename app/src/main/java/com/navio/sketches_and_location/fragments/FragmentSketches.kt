@@ -1,5 +1,9 @@
 package com.navio.sketches_and_location.fragments
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,6 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.navio.sketches_and_location.R
 import com.navio.sketches_and_location.databinding.DialogFileNameBinding
 import com.navio.sketches_and_location.databinding.DialogInsertTextBinding
 import com.navio.sketches_and_location.databinding.FragmentSketchesLayoutBinding
@@ -67,22 +72,20 @@ class FragmentSketches : Fragment() {
         //Use a callback to get the names instead of setting both Dialogs
         binding.buttonSave.setOnClickListener {
 
+            //todo Try to save changes into image...
+            val imageBitmap = BitmapFactory.decodeResource(resources, R.raw.tiger)
+
             showNameDialog(object : OnNamePassed {
 
                 override fun onNamePassed(name: String) {
-                    saveAfterGettingName(name)
+                    saveAfterGettingName(name, imageBitmap)
                 }
             })
         }
         //Stores file in gallery
-        binding.buttonAddToGallery.setOnClickListener {
-
-            showNameDialog(object : OnNamePassed {
-
-                override fun onNamePassed(name: String) {
-                    binding.drawingView.addImageToGallery(name)
-                }
-            })
+        binding.buttonAddImage.setOnClickListener {
+            //Set image
+            visualizeImage(R.raw.tiger)
         }
         //Introduces a text on canvas
         binding.buttonText.setOnClickListener {
@@ -106,12 +109,13 @@ class FragmentSketches : Fragment() {
             })
         }
     }
+
     private fun writeComment(callback: OnParametersChosen) {
 
-       showTextDialog{ comment ->
-           callback.onCommentChosen(comment)
-           Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
-       }
+        showTextDialog { comment ->
+            callback.onCommentChosen(comment)
+            Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
+        }
 
 //        binding.drawingView.startWriting()
     }
@@ -160,12 +164,12 @@ class FragmentSketches : Fragment() {
         alertDialogText?.show()
     }
 
-    private fun saveAfterGettingName(name: String) {
+    private fun saveAfterGettingName(name: String, bitmap: Bitmap) {
 
         //If name is blank --> "imagen" else "name"
         val fileName = name.ifBlank { "imagen" }
-
-        val savedFile = binding.drawingView.saveDrawing(fileName)
+        var finalBitmap = binding.drawingView.generateBitmap(bitmap)
+        val savedFile = binding.drawingView.saveDrawing(fileName, finalBitmap)
         if (savedFile != null) {
             Toast.makeText(context, "Imagen guardada ${savedFile.name}", Toast.LENGTH_SHORT).show()
         } else {
@@ -175,6 +179,11 @@ class FragmentSketches : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    //Why I cannot set image directly?
+    private fun visualizeImage(imageID: Int) {
+        binding.imageContainer.setImageResource(imageID)
     }
 
     companion object {

@@ -1,33 +1,28 @@
 package com.navio.sketches_and_location.drawing
 
-import android.app.AlertDialog
-import android.content.ContentValues
 import android.content.Context
-import android.content.DialogInterface
 import android.graphics.*
-import android.net.Uri
-import android.os.Build
+import android.graphics.Bitmap.createScaledBitmap
 import android.os.Environment
-import android.provider.MediaStore
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Toast
 import com.navio.sketches_and_location.fragments.OnScreenTouched
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.OutputStream
 
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private val drawPaint: Paint = Paint()
     private val textPaint: Paint = Paint()
     private val path: Path = Path()
+
     //Flags
     private var shouldDraw = false
     private var shouldWrite = false
+
     //Text
     private var comment: String = "No"
     private var xPosition: Float = 0f
@@ -43,15 +38,15 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         setupPaint()
     }
 
-    fun setupScreenListener(listener : OnScreenTouched){
+    fun setupScreenListener(listener: OnScreenTouched) {
         screenListener = listener
     }
 
     private fun setupPaint() {
         //Stroke parameters
-        drawPaint.color = Color.BLACK
+        drawPaint.color = Color.RED
         drawPaint.isAntiAlias = true //Softer, less pixelated edges
-        drawPaint.strokeWidth = 8f
+        drawPaint.strokeWidth = 12f
         drawPaint.style = Paint.Style.STROKE
         drawPaint.strokeJoin = Paint.Join.ROUND //Stroke body shape
         drawPaint.strokeCap = Paint.Cap.ROUND //Stroke end shape
@@ -70,6 +65,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             shouldWrite -> writeOnCanvas(canvas)
         }
     }
+
     //todo Can use onTouch instead of onTouchEvent to handle writing?
     override fun onTouchEvent(event: MotionEvent): Boolean {
 
@@ -102,94 +98,47 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         path.reset()
         invalidate()
     }
-    fun startDrawing(){
+
+    fun startDrawing() {
         shouldDraw = true
         //Reset the path in case the touch event registered something before
         path.reset()
     }
-    fun startWriting(text:String, x:Float, y:Float){
+
+    fun startWriting(text: String, x: Float, y: Float) {
         comment = text
         xPosition = x
         yPosition = y
         shouldDraw = false
         shouldWrite = true
     }
-    private fun drawOnCanvas(canvas: Canvas){
+
+    private fun drawOnCanvas(canvas: Canvas) {
         canvas.drawPath(path, drawPaint)
     }
-    private fun writeOnCanvas(canvas: Canvas){
 
+    private fun writeOnCanvas(canvas: Canvas) {
         canvas.drawText(comment, xPosition, yPosition, textPaint)
         shouldWrite = false
     }
+
     //Generates a bitmap with the current sketch
-    private fun generateBitmap(): Bitmap {
-
-        //Width and Height take View's dimensions
-        //Bitmap.Config.ARGB_8888 --> 32 bits, full color and transparency on background
-//        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        //White background
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
-        bitmap.eraseColor(Color.WHITE)
-        val canvas = Canvas(bitmap)
-        this.draw(canvas) // Draw the content of DrawingView onto the canvas
-        return bitmap
+    fun generateBitmap(bitmap: Bitmap): Bitmap {
+        //Scales the real image to be the size it was when showed on this view
+        val adaptedHeight = (bitmap.height * width) / bitmap.width
+        val scaledBitmap = createScaledBitmap(bitmap, width, adaptedHeight, true)
+        //Creates an editable bitmap
+        var mutableBitmap = scaledBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        //Draw canvas contents into bitmap
+        draw(Canvas(mutableBitmap))
+        return mutableBitmap
     }
-    fun addImageToGallery(name: String) {
-        val saveDialog = AlertDialog.Builder(context)
-        saveDialog.setTitle("AÑADIR A GALERÍA")
-        saveDialog.setMessage("¿Guardar la imagen en la galería?")
-        saveDialog.setPositiveButton("Guardar") { _: DialogInterface?, _: Int ->
-            val bmp: Bitmap = generateBitmap()
 
-            val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, name)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-                }
-            }
+    fun saveDrawing(name: String, bitmap: Bitmap): File? {
 
-            val resolver = context.contentResolver
-            var imageUri: Uri? = null
-            var outputStream: OutputStream? = null
-
-            try {
-                val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                imageUri = resolver.insert(contentUri, contentValues)
-                imageUri?.let {
-                    outputStream = resolver.openOutputStream(it)
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                    Toast.makeText(context, "La imagen se guardó en la galería", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                Toast.makeText(
-                    context,
-                    "Fallo al guardar imagen en la galería",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } finally {
-                outputStream?.close()
-                imageUri?.let {
-                    resolver.notifyChange(it, null)
-                }
-            }
+        val fileName = name.let { givenName ->
+            if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION
         }
-        saveDialog.setNegativeButton("Cancelar") { dialog: DialogInterface, _: Int -> dialog.cancel() }
-        saveDialog.show()
-    }
-
-    fun saveDrawing(name: String): File? {
-
-        val bitmap = generateBitmap()
-        val canvas = Canvas(bitmap)
-        draw(canvas)
-
-        val fileName =
-            name.let { givenName -> if (givenName.contains(PNG_EXTENSION)) givenName else givenName + PNG_EXTENSION }
-//      val fileName = "$name$PNG_EXTENSION"
         val fileDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         val file = File(fileDir, fileName)
 

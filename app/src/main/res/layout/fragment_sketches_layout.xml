@@ -4,6 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ImageView
+        android:id="@+id/image_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:scaleType="fitStart"
+        app:layout_constraintBottom_toTopOf="@+id/linear_block_buttons"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.navio.sketches_and_location.drawing.DrawingView
         android:id="@+id/drawing_view"
         android:layout_width="match_parent"
@@ -38,7 +48,7 @@
             android:src="@drawable/icon_text_24"/>
 
         <ImageButton
-            android:id="@+id/button_add_to_gallery"
+            android:id="@+id/button_add_image"
             android:layout_width="@dimen/image_button_width"
             android:layout_height="@dimen/image_button_height"
             android:layout_marginHorizontal="@dimen/margin_small"
