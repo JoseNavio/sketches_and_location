@@ -48,52 +48,53 @@ class FragmentSketches : Fragment() {
     //Set up layout buttons
     private fun setButtons() {
         //Allow to draw on screen
-        binding.buttonDraw.setOnClickListener {
+        binding.buttonDraw.setOnClickListener {// > Draw
             binding.drawingView.startDrawing()
         }
-        //Clears window
-        binding.buttonClear.setOnClickListener {
-            binding.drawingView.undo()
+        //Introduces a text on canvas
+        binding.buttonText.setOnClickListener {// > Write
+            writeComment()
         }
-        binding.buttonClear.setOnLongClickListener{
-            binding.drawingView.clear()
+        binding.buttonText.setOnLongClickListener{
+            //todo Provisional
+            binding.drawingView.drawCoordinates(binding.imageContainer);
             true
         }
         //Stores file in app internal storage
-        //Use a callback to get the names instead of setting both Dialogs
-        binding.buttonSave.setOnClickListener {
+        binding.buttonSave.setOnClickListener {// > Save
 
-            //todo Try to save changes into image...
             val imageBitmap = BitmapFactory.decodeResource(resources, R.raw.tiger)
-
             showNameDialog(object : OnTextPassed {
-
                 override fun onTextPassed(name: String) {
                     saveAfterGettingName(name, imageBitmap)
                 }
             })
         }
-        //Stores file in gallery
-        binding.buttonAddImage.setOnClickListener {
+        //Shows image
+        binding.buttonAddImage.setOnClickListener {// > Image
             //Set image
             visualizeImage(R.raw.tiger)
         }
-        //Introduces a text on canvas
-        binding.buttonText.setOnClickListener {
-            //todo Need to call the startWriting
-            binding.drawingView.startWriting()
+        //Undo last change
+        binding.buttonClear.setOnClickListener {// > Undo
+            binding.drawingView.undo()
+        }
+        //Clears window
+        binding.buttonClear.setOnLongClickListener {// > Clear
+            binding.drawingView.clear()
+            true
         }
     }
+    private fun writeComment() {
 
-//    private fun writeComment(callback: OnParametersChosen) {
-//
-//        showTextDialog { comment ->
-//            callback.onCommentChosen(comment)
-//            Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
-//        }
-//
-////        binding.drawingView.startWriting()
-//    }
+        showTextDialog(object : OnTextPassed {
+
+            override fun onTextPassed(comment: String) {
+                binding.drawingView.startWriting(comment)
+                Toast.makeText(context, "Selecciona un punto en la pantalla", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
 
     private fun showNameDialog(callback: OnTextPassed) {
 
@@ -116,7 +117,7 @@ class FragmentSketches : Fragment() {
         alertDialogFile?.show()
     }
 
-    private fun showTextDialog(callback: (String) -> Unit) {
+    private fun showTextDialog(callback: OnTextPassed) {
 
         val dialogTextBinding: DialogInsertTextBinding =
             DialogInsertTextBinding.inflate(layoutInflater)
@@ -129,7 +130,7 @@ class FragmentSketches : Fragment() {
                 .setView(dialogTextBinding.root)
                 .setPositiveButton("Aceptar") { _, _ ->
                     //Return written comment
-                    callback(dialogTextBinding.fieldInsertText.text.toString())
+                    callback.onTextPassed(dialogTextBinding.fieldInsertText.text.toString())
                 }
                 .setNegativeButton("Cancelar") { dialog, _ ->
                     dialog.dismiss()
@@ -168,9 +169,6 @@ class FragmentSketches : Fragment() {
 
 //Pass the name from Dialog to button click listener event
 interface OnTextPassed {
-    fun onTextPassed(name: String)
+    fun onTextPassed(text: String)
 }
 
-interface OnScreenTouched {
-    fun onScreenClicked(x: Float, y: Float, comment: OnTextPassed)
-}

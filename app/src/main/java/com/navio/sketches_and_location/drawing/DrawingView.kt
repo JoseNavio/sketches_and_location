@@ -8,11 +8,12 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import com.navio.sketches_and_location.fragments.OnScreenTouched
-import com.navio.sketches_and_location.fragments.OnTextPassed
+import android.widget.ImageView
+import com.navio.sketches_and_location.data.CommentCanvas
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import kotlin.math.min
 
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
@@ -20,18 +21,16 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private val drawPaint: Paint = Paint()
     private val textPaint: Paint = Paint()
     private var currentPath: Path? = null
+    private var currentComment: String? = null
 
     //List
     private val paths = mutableListOf<Path>()
+    private val comments = mutableListOf<CommentCanvas>()
+    private val history = mutableListOf<EditOperation>()
 
     //Flags
     private var shouldDraw = false
     private var shouldWrite = false
-
-    //Text
-    private var comment: String = "No"
-    private var x: Float = 0f
-    private var y: Float = 0f
 
     init {
         isFocusable = true //Focusable view
@@ -49,8 +48,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         drawPaint.strokeJoin = Paint.Join.ROUND //Stroke body shape
         drawPaint.strokeCap = Paint.Cap.ROUND //Stroke end shape
         //Text parameters
-        textPaint.color = Color.BLACK
-        textPaint.textSize = 64f
+        textPaint.color = Color.RED
+        textPaint.textSize = 96f
         textPaint.textAlign = Paint.Align.LEFT
         //Font and style
         textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -58,32 +57,33 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        when {
-            shouldDraw -> drawOnCanvas(canvas)
-            shouldWrite -> writeOnCanvas(canvas)
-        }
+
+        drawOnCanvas(canvas)
+        writeOnCanvas(canvas)
+
     }
 
     //Watches where screen has been touched to draw on it
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val touchX = event.x
-        val touchY = event.y
+        val x = event.x
+        val y = event.y
         if (shouldDraw) {
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     // Sets the initial point of the path
                     currentPath = Path()
-                    currentPath?.moveTo(touchX, touchY)
+                    currentPath?.moveTo(x, y)
                     return true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Adds a segment to the path
-                    currentPath?.lineTo(touchX, touchY)
+                    currentPath?.lineTo(x, y)
                 }
                 MotionEvent.ACTION_UP -> {
                     // Add path to list and start a new path
                     currentPath?.let { path ->
                         paths.add(path)
+                        history.add(EditOperation.DRAW)
                         currentPath = null
                     }
                 }
@@ -97,12 +97,13 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                     //Returning true notifies that event already handled
                     return true
                 }
-                //todo Check structure cause this is not painting the path
                 MotionEvent.ACTION_UP -> {
-                    Log.d("Navio_Write", "Position")
                     // Do any required actions when the finger is lifted
-                    x = touchX
-                    y = touchY
+                    currentComment?.let { comment ->
+                        comments.add(CommentCanvas(comment, x, y))
+                        currentComment = null
+                        history.add(EditOperation.WRITE)
+                    }
                 }
                 else -> return false //Avoid to cancelling ACTION_UP if finger moves before release
             }
@@ -114,11 +115,12 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     //Draw and Write
     fun startDrawing() {
-        shouldDraw = true
-        shouldWrite = false
+        this.shouldDraw = true
+        this.shouldWrite = false
     }
 
-    fun startWriting() {
+    fun startWriting(comment: String) {
+        this.currentComment = comment
         shouldDraw = false
         shouldWrite = true
     }
@@ -135,20 +137,35 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 
     private fun writeOnCanvas(canvas: Canvas) {
-        canvas.drawText(comment, x, y, textPaint)
+        for (comment in comments) {
+            canvas.drawText(comment.text, comment.x, comment.y, textPaint)
+        }
         shouldWrite = false
     }
 
-    //Delete sketches
+    //Delete all drawings and writings
     fun clear() {
         paths.clear()
+        comments.clear()
         invalidate()
     }
-
+    //Undo last operation
     fun undo() {
-        if (paths.isNotEmpty()) {
-            paths.removeLast()
-            invalidate()
+        if (history.isNotEmpty()) {
+            when (history.removeLast()) {
+                EditOperation.DRAW -> {
+                    if (paths.isNotEmpty()) {
+                        paths.removeLast()
+                        invalidate()
+                    }
+                }
+                EditOperation.WRITE -> {
+                    if (comments.isNotEmpty()) {
+                        comments.removeLast()
+                        invalidate()
+                    }
+                }
+            }
         }
     }
 
@@ -188,8 +205,30 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         return null
     }
+    //todo Provisional
+    fun drawCoordinates(image: ImageView) {
+        shouldDraw = false
+        shouldWrite = true
+        currentComment = "X = 123, Y = 122"
+
+        val viewWidth = image.width.toFloat()
+        val viewHeight = image.height.toFloat()
+
+        val twentyFivePercent = 0.15f
+        val size = min(viewWidth, viewHeight) * twentyFivePercent
+
+        comments.add(CommentCanvas(currentComment!!, size, size))
+        history.add(EditOperation.WRITE)
+
+        invalidate()
+        shouldWrite = false
+    }
 
     companion object {
         private const val PNG_EXTENSION = ".png"
     }
+}
+
+enum class EditOperation {
+    DRAW, WRITE
 }
