@@ -19,7 +19,10 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     private val drawPaint: Paint = Paint()
     private val textPaint: Paint = Paint()
-    private val path: Path = Path()
+    private var currentPath: Path? = null
+
+    //List
+    private val paths = mutableListOf<Path>()
 
     //Flags
     private var shouldDraw = false
@@ -30,18 +33,11 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var x: Float = 0f
     private var y: Float = 0f
 
-    //Listener
-    private lateinit var screenListener: OnScreenTouched
-
     init {
         isFocusable = true //Focusable view
         isFocusableInTouchMode =
             true //Gain focus and handle touch events without requiring an explicit click or focus change event.
         setupPaint()
-    }
-
-    fun setupScreenListener(listener: OnScreenTouched) {
-        screenListener = listener
     }
 
     private fun setupPaint() {
@@ -63,7 +59,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         when {
-
             shouldDraw -> drawOnCanvas(canvas)
             shouldWrite -> writeOnCanvas(canvas)
         }
@@ -71,71 +66,90 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
 
     //Watches where screen has been touched to draw on it
     override fun onTouchEvent(event: MotionEvent): Boolean {
-
         val touchX = event.x
         val touchY = event.y
-
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                //Sets the initial point of the path
-                path.moveTo(touchX, touchY)
-                return true
-            }
-            MotionEvent.ACTION_MOVE -> {
-                //Adds a segment to the path
-                path.lineTo(touchX, touchY)
-            }
-            MotionEvent.ACTION_UP -> {
-                //Do any required actions when finger is lifted
-                screenListener.onScreenClicked(event.x, event.y, object : OnTextPassed {
-
-                    override fun onTextPassed(comment: String) {
-                        startWriting(x, y, comment)
+        if (shouldDraw) {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    // Sets the initial point of the path
+                    currentPath = Path()
+                    currentPath?.moveTo(touchX, touchY)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    // Adds a segment to the path
+                    currentPath?.lineTo(touchX, touchY)
+                }
+                MotionEvent.ACTION_UP -> {
+                    // Add path to list and start a new path
+                    currentPath?.let { path ->
+                        paths.add(path)
+                        currentPath = null
                     }
-                })
+                }
+                else -> return false
             }
-            else -> return false
+            // Force the view to redraw
+            invalidate()
+        } else if (shouldWrite) {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    //Returning true notifies that event already handled
+                    return true
+                }
+                //todo Check structure cause this is not painting the path
+                MotionEvent.ACTION_UP -> {
+                    Log.d("Navio_Write", "Position")
+                    // Do any required actions when the finger is lifted
+                    x = touchX
+                    y = touchY
+                }
+                else -> return false //Avoid to cancelling ACTION_UP if finger moves before release
+            }
+            // Force the view to redraw
+            invalidate()
         }
-        // Force the view to redraw
-        invalidate()
         return true
     }
 
-    fun clear() {
-        path.reset()
-        invalidate()
-    }
-
+    //Draw and Write
     fun startDrawing() {
         shouldDraw = true
         shouldWrite = false
-        //Reset the path in case the touch event registered something before
-        path.reset()
     }
 
-    fun startWriting(){
-        shouldDraw = false
-        shouldWrite = true
-    }
-    
-    fun startWriting(x: Float, y: Float, comment: String) {
-        //Set local parameters first
-        this.x = x
-        this.y = y
-        this.comment = comment
-
+    fun startWriting() {
         shouldDraw = false
         shouldWrite = true
     }
 
     private fun drawOnCanvas(canvas: Canvas) {
-        canvas.drawPath(path, drawPaint)
+        //Draws the temp path before releasing screen
+        currentPath?.let {
+            canvas.drawPath(it, drawPaint)
+        }
+        //Draws all paths stored
+        for (path in paths) {
+            canvas.drawPath(path, drawPaint)
+        }
     }
 
     private fun writeOnCanvas(canvas: Canvas) {
-
         canvas.drawText(comment, x, y, textPaint)
         shouldWrite = false
+    }
+
+    //Delete sketches
+    fun clear() {
+        paths.clear()
+        invalidate()
+    }
+
+    fun undo() {
+        if (paths.isNotEmpty()) {
+            paths.removeLast()
+            invalidate()
+        }
     }
 
     //Generates a bitmap with the current sketch
@@ -178,7 +192,4 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     companion object {
         private const val PNG_EXTENSION = ".png"
     }
-}
-interface OnScreenClicked {
-    fun onPositionClicked(x: Float, y: Float)
 }

@@ -20,9 +20,6 @@ class FragmentSketches : Fragment() {
 
     lateinit var binding: FragmentSketchesLayoutBinding
 
-    var lastX: Float = 0f
-    var lastY: Float = 0f
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = FragmentSketchesLayoutBinding.inflate(layoutInflater)
@@ -45,16 +42,7 @@ class FragmentSketches : Fragment() {
 
     //Init views related task and configuration
     private fun initViews() {
-        //todo can you change this in order to just ask with a method
-        binding.drawingView.setupScreenListener(object : OnScreenTouched {
 
-            override fun onScreenClicked(x: Float, y: Float, commentListener: OnTextPassed) {
-                Log.d("Navio_Position", "Position: $x , $y")
-                lastX = x
-                lastY = y
-                showNameDialog(commentListener)
-            }
-        })
     }
 
     //Set up layout buttons
@@ -65,7 +53,11 @@ class FragmentSketches : Fragment() {
         }
         //Clears window
         binding.buttonClear.setOnClickListener {
+            binding.drawingView.undo()
+        }
+        binding.buttonClear.setOnLongClickListener{
             binding.drawingView.clear()
+            true
         }
         //Stores file in app internal storage
         //Use a callback to get the names instead of setting both Dialogs
