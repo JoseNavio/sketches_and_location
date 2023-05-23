@@ -1,7 +1,5 @@
-#Sketches and Location
+# Sketches and Location
 
- - Sketches:
+ - Adding text:
 
-	> Drawing with screen touching
-	> Clear window
-	> Save file as PNG (Gallery or App internal storage --> /storage/self/primary/Android/data/com.navio.sketches_and_location/files/Pictures)
+	WIP branch in order to try adding new functionalities such us adding text.
