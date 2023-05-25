@@ -5,15 +5,16 @@ import android.graphics.*
 import android.graphics.Bitmap.createScaledBitmap
 import android.os.Environment
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
+import com.navio.sketches_and_location.data.AnnotationCanvas
+import com.navio.sketches_and_location.data.OperationCanvas
 import com.navio.sketches_and_location.data.CommentCanvas
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import kotlin.math.min
+import java.time.LocalDate
 
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
@@ -23,44 +24,53 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var currentPath: Path? = null
     private var currentComment: String? = null
 
+    var lastOperation: OperationCanvas? = null
+    var lastAnnotation: AnnotationCanvas? = null
+    var lastComment: CommentCanvas? = null
+
     //List
     private val paths = mutableListOf<Path>()
     private val comments = mutableListOf<CommentCanvas>()
     private val history = mutableListOf<EditOperation>()
+    private val annotations = mutableListOf<AnnotationCanvas>()
 
     //Flags
     private var shouldDraw = false
     private var shouldWrite = false
+    private var shouldAnnotate = false
+    private var shouldMove = false
 
     init {
         isFocusable = true //Focusable view
         isFocusableInTouchMode =
             true //Gain focus and handle touch events without requiring an explicit click or focus change event.
-        setupPaint()
+//        setupPaint(getContext().getColor(R.color.ocher))
+        setupPaint(Color.RED)
     }
 
-    private fun setupPaint() {
+    private fun setupPaint(color: Int) {
         //Stroke parameters
-        drawPaint.color = Color.RED
+        drawPaint.color = color
         drawPaint.isAntiAlias = true //Softer, less pixelated edges
         drawPaint.strokeWidth = 12f
         drawPaint.style = Paint.Style.STROKE
         drawPaint.strokeJoin = Paint.Join.ROUND //Stroke body shape
         drawPaint.strokeCap = Paint.Cap.ROUND //Stroke end shape
         //Text parameters
-        textPaint.color = Color.RED
-        textPaint.textSize = 96f
+        textPaint.color = color
+        textPaint.textSize = 80f
         textPaint.textAlign = Paint.Align.LEFT
         //Font and style
-        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     }
 
+    //Where we call canvas to be painted
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         drawOnCanvas(canvas)
         writeOnCanvas(canvas)
-
+        annotateOnCanvas(canvas)
     }
 
     //Watches where screen has been touched to draw on it
@@ -109,22 +119,104 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
             // Force the view to redraw
             invalidate()
+        } else if (shouldMove && history.isNotEmpty()) {
+            when (history.last()) {
+                EditOperation.WRITE -> {
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            if (comments.isNotEmpty()) {
+                                lastComment = comments.last()
+                                lastComment?.x = x
+                                lastComment?.y = y
+                            }
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            if (comments.isNotEmpty()) {
+                                lastComment?.x = x
+                                lastComment?.y = y
+                            }
+                        }
+                        // Handle other motion events if needed
+                        else -> return true
+                    }
+                }
+                EditOperation.ANNOTATE -> {
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            if (annotations.isNotEmpty()) {
+                                lastAnnotation = annotations.last()
+                                lastAnnotation?.x = x
+                                lastAnnotation?.y = y
+                            }
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            if (annotations.isNotEmpty()) {
+                                lastAnnotation?.x = x
+                                lastAnnotation?.y = y
+                            }
+                        }
+                        // Handle other motion events if needed
+                        else -> return false
+                    }
+                }
+                // Handle other edit operations if needed
+                else -> {}
+            }
+            invalidate()
         }
         return true
     }
 
-    //Draw and Write
+    //Draw, move and write flags
     fun startDrawing() {
-        this.shouldDraw = true
-        this.shouldWrite = false
+        selectOperation(EditOperation.DRAW)
     }
 
     fun startWriting(comment: String) {
-        this.currentComment = comment
-        shouldDraw = false
-        shouldWrite = true
+        currentComment = comment
+        selectOperation(EditOperation.WRITE)
     }
 
+    fun startMoving() {
+        selectOperation(EditOperation.MOVE)
+    }
+
+    fun startAnnotating(annotation: AnnotationCanvas) {
+
+        selectOperation(EditOperation.ANNOTATE)
+        annotations.add(annotation)
+        history.add(EditOperation.ANNOTATE)
+        invalidate()
+    }
+
+    fun startAnnotating(image: ImageView) {
+
+        selectOperation(EditOperation.ANNOTATE)
+        val viewWidth = image.width.toFloat()
+        val viewHeight = image.height.toFloat()
+
+        val percent = 0.05f
+
+        val lines = arrayOf("Z: 233.66", "Y: 256.76", "X: 123.54", LocalDate.now().toString())
+        var count = 0
+        val commentList = mutableListOf<CommentCanvas>()
+
+        for (line in lines) {
+            count++
+            commentList.add(
+                CommentCanvas(
+                    line,
+                    (percent * viewWidth),
+                    (percent * viewHeight * count)
+                )
+            )
+        }
+        annotations.add(AnnotationCanvas(100f, 100f, commentList))
+        history.add(EditOperation.ANNOTATE)
+        invalidate()
+    }
+
+    //Paint into the canvas each time onDraw is called
     private fun drawOnCanvas(canvas: Canvas) {
         //Draws the temp path before releasing screen
         currentPath?.let {
@@ -143,12 +235,28 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         shouldWrite = false
     }
 
+    private fun annotateOnCanvas(canvas: Canvas) {
+        for (annotation in annotations) {
+            for (comment in annotation.comments) {
+                canvas.drawText(
+                    comment.text,
+                    annotation.x + comment.x,
+                    annotation.y + comment.y,
+                    textPaint
+                )
+            }
+        }
+        shouldAnnotate = false
+    }
+
     //Delete all drawings and writings
     fun clear() {
         paths.clear()
         comments.clear()
+        annotations.clear()
         invalidate()
     }
+
     //Undo last operation
     fun undo() {
         if (history.isNotEmpty()) {
@@ -165,6 +273,19 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                         invalidate()
                     }
                 }
+                EditOperation.ANNOTATE -> {
+                    if (annotations.isNotEmpty()) {
+                        annotations.removeLast()
+                        invalidate()
+                    }
+                }
+                EditOperation.MOVE -> {
+                    if (annotations.isNotEmpty()) {
+                        annotations.removeLast()
+                        invalidate()
+                    }
+                }
+                else -> {}
             }
         }
     }
@@ -181,6 +302,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return mutableBitmap
     }
 
+    //todo Do in coroutine
     fun saveDrawing(name: String, bitmap: Bitmap): File? {
 
         val fileName = name.let { givenName ->
@@ -205,23 +327,20 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         }
         return null
     }
-    //todo Provisional
-    fun drawCoordinates(image: ImageView) {
-        shouldDraw = false
-        shouldWrite = true
-        currentComment = "X = 123, Y = 122"
 
-        val viewWidth = image.width.toFloat()
-        val viewHeight = image.height.toFloat()
-
-        val twentyFivePercent = 0.15f
-        val size = min(viewWidth, viewHeight) * twentyFivePercent
-
-        comments.add(CommentCanvas(currentComment!!, size, size))
-        history.add(EditOperation.WRITE)
-
-        invalidate()
+    private fun selectOperation(operation: EditOperation) {
         shouldWrite = false
+        shouldDraw = false
+        shouldAnnotate = false
+        shouldMove = false
+
+        when (operation) {
+            EditOperation.DRAW -> shouldDraw = true
+            EditOperation.WRITE -> shouldWrite = true
+            EditOperation.ANNOTATE -> shouldAnnotate = true
+            EditOperation.MOVE -> shouldMove = true
+            else -> {}
+        }
     }
 
     companion object {
@@ -229,6 +348,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     }
 }
 
+//Each type of edit operation
 enum class EditOperation {
-    DRAW, WRITE
+    DRAW, WRITE, ANNOTATE, MOVE, NONE
 }
