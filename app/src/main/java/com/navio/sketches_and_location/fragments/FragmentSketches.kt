@@ -87,6 +87,10 @@ class FragmentSketches : Fragment() {
         binding.buttonMove.setOnClickListener {// > Move
             binding.drawingView.startMoving()
         }
+        //todo Test copy
+        binding.buttonCopy.setOnClickListener{
+            binding.drawingView.copyLast()
+        }
         //Undo last change
         binding.buttonClear.setOnClickListener {// > Undo
             binding.drawingView.undo()
@@ -164,6 +168,7 @@ class FragmentSketches : Fragment() {
         }
         alertDialogText?.show()
     }
+
     private fun showDeleteDialog() {
 
         val dialogTextBinding: DialogConfirmDeleteBinding =
@@ -207,24 +212,25 @@ class FragmentSketches : Fragment() {
                     var checkCount = 0
                     // Retrieve the checked state of the checkboxes and set conditions
                     if (x.isChecked) {
-                        attributes.add(CommentCanvas("x: 150020.123", 0f, 100f * checkCount))
+                        attributes.add(CommentCanvas(0f, 100f * checkCount, "x: 150020.123"))
                         checkCount++
                     }
                     if (y.isChecked) {
-                        attributes.add(CommentCanvas("y: 144066.025", 0f, 100f * checkCount))
+                        attributes.add(CommentCanvas(0f, 100f * checkCount, "y: 144066.025"))
                         checkCount++
                     }
                     if (z.isChecked) {
-                        attributes.add(CommentCanvas("z: 230001.567", 0f, 100f * checkCount))
+                        attributes.add(CommentCanvas(0f, 100f * checkCount, "z: 230001.567"))
                         checkCount++
                     }
                     if (date.isChecked) {
                         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm")
                         attributes.add(
                             CommentCanvas(
-                                LocalDateTime.now().format(formatter),
+
                                 0f,
-                                100f * checkCount
+                                100f * checkCount,
+                                LocalDateTime.now().format(formatter)
                             )
                         )
                     }

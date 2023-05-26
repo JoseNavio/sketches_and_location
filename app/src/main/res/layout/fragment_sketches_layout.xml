@@ -96,6 +96,13 @@
                 android:src="@drawable/icon_move_24" />
 
             <ImageButton
+                android:id="@+id/button_copy"
+                android:layout_width="@dimen/image_button_width"
+                android:layout_height="@dimen/image_button_height"
+                android:layout_marginHorizontal="@dimen/margin_small"
+                android:src="@drawable/icon_copy_24" />
+
+            <ImageButton
                 android:id="@+id/button_clear"
                 android:layout_width="@dimen/image_button_width"
                 android:layout_height="@dimen/image_button_height"

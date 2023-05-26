@@ -7,14 +7,13 @@ import android.os.Environment
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ImageView
 import com.navio.sketches_and_location.data.AnnotationCanvas
 import com.navio.sketches_and_location.data.OperationCanvas
 import com.navio.sketches_and_location.data.CommentCanvas
+import com.navio.sketches_and_location.data.PathCanvas
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.time.LocalDate
 
 //attrs is used to pass the attributes defined in the XML to the parent View
 class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) {
@@ -25,11 +24,9 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
     private var currentComment: String? = null
 
     var lastOperation: OperationCanvas? = null
-    var lastAnnotation: AnnotationCanvas? = null
-    var lastComment: CommentCanvas? = null
 
     //List
-    private val paths = mutableListOf<Path>()
+    private val paths = mutableListOf<PathCanvas>()
     private val comments = mutableListOf<CommentCanvas>()
     private val history = mutableListOf<EditOperation>()
     private val annotations = mutableListOf<AnnotationCanvas>()
@@ -73,11 +70,11 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         annotateOnCanvas(canvas)
     }
 
-    //Watches where screen has been touched to draw on it
+    //Watches where screen has been touched to draw, write, move, ... (Flags dependant)
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = event.x
         val y = event.y
-        if (shouldDraw) {
+        if (shouldDraw) { // -> Draw flag
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     // Sets the initial point of the path
@@ -92,7 +89,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 MotionEvent.ACTION_UP -> {
                     // Add path to list and start a new path
                     currentPath?.let { path ->
-                        paths.add(path)
+                        paths.add(PathCanvas(x, y, path))
                         history.add(EditOperation.DRAW)
                         currentPath = null
                     }
@@ -101,7 +98,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
             // Force the view to redraw
             invalidate()
-        } else if (shouldWrite) {
+        } else if (shouldWrite) { // -> Write flag
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     //Returning true notifies that event already handled
@@ -110,7 +107,7 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
                 MotionEvent.ACTION_UP -> {
                     // Do any required actions when the finger is lifted
                     currentComment?.let { comment ->
-                        comments.add(CommentCanvas(comment, x, y))
+                        comments.add(CommentCanvas(x, y, comment))
                         currentComment = null
                         history.add(EditOperation.WRITE)
                     }
@@ -119,50 +116,34 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             }
             // Force the view to redraw
             invalidate()
-        } else if (shouldMove && history.isNotEmpty()) {
-            when (history.last()) {
-                EditOperation.WRITE -> {
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            if (comments.isNotEmpty()) {
-                                lastComment = comments.last()
-                                lastComment?.x = x
-                                lastComment?.y = y
-                            }
-                        }
-                        MotionEvent.ACTION_MOVE -> {
-                            if (comments.isNotEmpty()) {
-                                lastComment?.x = x
-                                lastComment?.y = y
-                            }
-                        }
-                        // Handle other motion events if needed
-                        else -> return true
+        } else if (shouldMove && history.isNotEmpty()) { // -> Move flag
+            if (history.last() != EditOperation.MOVE) {
+                //Choose operation type using inheritance
+                when (history.last()) {
+                    EditOperation.WRITE -> {
+                        lastOperation = comments.last()
+                        lastOperation as CommentCanvas
                     }
-                }
-                EditOperation.ANNOTATE -> {
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            if (annotations.isNotEmpty()) {
-                                lastAnnotation = annotations.last()
-                                lastAnnotation?.x = x
-                                lastAnnotation?.y = y
-                            }
-                        }
-                        MotionEvent.ACTION_MOVE -> {
-                            if (annotations.isNotEmpty()) {
-                                lastAnnotation?.x = x
-                                lastAnnotation?.y = y
-                            }
-                        }
-                        // Handle other motion events if needed
-                        else -> return false
+                    EditOperation.ANNOTATE -> {
+                        lastOperation = annotations.last()
+                        lastOperation as AnnotationCanvas
                     }
+                    EditOperation.DRAW -> {
+                        lastOperation = paths.last()
+                        lastOperation as PathCanvas
+                    }
+                    else -> {}
                 }
-                // Handle other edit operations if needed
-                else -> {}
+                //Handle the event
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                        lastOperation?.modifyPosition(x, y)
+                    }
+                    // Handle other edit operations if needed
+                    else -> {}
+                }
+                invalidate()
             }
-            invalidate()
         }
         return true
     }
@@ -189,33 +170,6 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         invalidate()
     }
 
-    fun startAnnotating(image: ImageView) {
-
-        selectOperation(EditOperation.ANNOTATE)
-        val viewWidth = image.width.toFloat()
-        val viewHeight = image.height.toFloat()
-
-        val percent = 0.05f
-
-        val lines = arrayOf("Z: 233.66", "Y: 256.76", "X: 123.54", LocalDate.now().toString())
-        var count = 0
-        val commentList = mutableListOf<CommentCanvas>()
-
-        for (line in lines) {
-            count++
-            commentList.add(
-                CommentCanvas(
-                    line,
-                    (percent * viewWidth),
-                    (percent * viewHeight * count)
-                )
-            )
-        }
-        annotations.add(AnnotationCanvas(100f, 100f, commentList))
-        history.add(EditOperation.ANNOTATE)
-        invalidate()
-    }
-
     //Paint into the canvas each time onDraw is called
     private fun drawOnCanvas(canvas: Canvas) {
         //Draws the temp path before releasing screen
@@ -223,8 +177,8 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             canvas.drawPath(it, drawPaint)
         }
         //Draws all paths stored
-        for (path in paths) {
-            canvas.drawPath(path, drawPaint)
+        for (pathContainer in paths) {
+            canvas.drawPath(pathContainer.path, drawPaint)
         }
     }
 
@@ -341,6 +295,36 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             EditOperation.MOVE -> shouldMove = true
             else -> {}
         }
+    }
+    //Add a displaced copy of the object
+    fun copyLast() {
+        if (history.isNotEmpty()) {
+            when (history.last()) {
+                EditOperation.DRAW -> {
+                    if (paths.isNotEmpty()) {
+                        val lastPath = paths.last().copyOperation() // Create a copy of the last path
+                        paths.add(lastPath as PathCanvas)
+                        history.add(EditOperation.DRAW)
+                    }
+                }
+                EditOperation.WRITE -> {
+                    if (comments.isNotEmpty()) {
+                        val lastComment = comments.last().copyOperation() // Create a copy of the last comment
+                        comments.add(lastComment as CommentCanvas)
+                        history.add(EditOperation.WRITE)
+                    }
+                }
+                EditOperation.ANNOTATE -> {
+                    if (annotations.isNotEmpty()) {
+                        val lastAnnotation = annotations.last().copyOperation() // Create a copy of the last annotation
+                        annotations.add(lastAnnotation as AnnotationCanvas)
+                        history.add(EditOperation.ANNOTATE)
+                    }
+                }
+                else -> {}
+            }
+        }
+        invalidate()
     }
 
     companion object {
