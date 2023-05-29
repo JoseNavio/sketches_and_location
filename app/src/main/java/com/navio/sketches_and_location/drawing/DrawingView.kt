@@ -282,6 +282,24 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
         return null
     }
 
+    //Select a new color to paint with
+    fun selectColor(color: Int) {
+        drawPaint.color = color
+        textPaint.color = color
+        invalidate()
+    }
+
+    //Select a new text size
+    fun selectTextSize(size: Float) {
+        textPaint.textSize = size
+    }
+
+    //Select a new stroke size
+    fun selectStrokeSize(size: Float) {
+        drawPaint.strokeWidth = size
+    }
+
+    //Select current operation
     private fun selectOperation(operation: EditOperation) {
         shouldWrite = false
         shouldDraw = false
@@ -296,27 +314,31 @@ class DrawingView(context: Context, attrs: AttributeSet) : View(context, attrs) 
             else -> {}
         }
     }
+
     //Add a displaced copy of the object
     fun copyLast() {
         if (history.isNotEmpty()) {
             when (history.last()) {
                 EditOperation.DRAW -> {
                     if (paths.isNotEmpty()) {
-                        val lastPath = paths.last().copyOperation() // Create a copy of the last path
+                        val lastPath =
+                            paths.last().copyOperation() // Create a copy of the last path
                         paths.add(lastPath as PathCanvas)
                         history.add(EditOperation.DRAW)
                     }
                 }
                 EditOperation.WRITE -> {
                     if (comments.isNotEmpty()) {
-                        val lastComment = comments.last().copyOperation() // Create a copy of the last comment
+                        val lastComment =
+                            comments.last().copyOperation() // Create a copy of the last comment
                         comments.add(lastComment as CommentCanvas)
                         history.add(EditOperation.WRITE)
                     }
                 }
                 EditOperation.ANNOTATE -> {
                     if (annotations.isNotEmpty()) {
-                        val lastAnnotation = annotations.last().copyOperation() // Create a copy of the last annotation
+                        val lastAnnotation = annotations.last()
+                            .copyOperation() // Create a copy of the last annotation
                         annotations.add(lastAnnotation as AnnotationCanvas)
                         history.add(EditOperation.ANNOTATE)
                     }

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +19,7 @@ import com.navio.sketches_and_location.R
 import com.navio.sketches_and_location.data.AnnotationCanvas
 import com.navio.sketches_and_location.data.CommentCanvas
 import com.navio.sketches_and_location.databinding.DialogConfirmDeleteBinding
+import com.navio.sketches_and_location.databinding.DialogEditPaintBinding
 import com.navio.sketches_and_location.databinding.DialogFileNameBinding
 import com.navio.sketches_and_location.databinding.DialogInsertTextBinding
 import com.navio.sketches_and_location.databinding.FragmentSketchesLayoutBinding
@@ -26,12 +28,23 @@ import java.time.format.DateTimeFormatter
 
 class FragmentSketches : Fragment() {
 
-    lateinit var binding: FragmentSketchesLayoutBinding
+    private lateinit var binding: FragmentSketchesLayoutBinding
+    private lateinit var bindingDialogPalette: DialogEditPaintBinding
+    private lateinit var selectedColor: ColorDrawable
+
+    //Load colors
+    private lateinit var white: ColorDrawable
+    private lateinit var red: ColorDrawable
+    private lateinit var ocher: ColorDrawable
+    private lateinit var blue: ColorDrawable
+    private lateinit var green: ColorDrawable
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = FragmentSketchesLayoutBinding.inflate(layoutInflater)
         initViews()
+        initColors()
         setButtons()
     }
 
@@ -60,6 +73,20 @@ class FragmentSketches : Fragment() {
 
     }
 
+    //Init the available colors
+    private fun initColors() {
+        //If context is not null init the colors
+        context?.let {
+            white = ColorDrawable(it.getColor(R.color.white))
+            red = ColorDrawable(it.getColor(R.color.red))
+            ocher = ColorDrawable(it.getColor(R.color.ocher))
+            blue = ColorDrawable(it.getColor(R.color.blue))
+            green = ColorDrawable(it.getColor(R.color.green))
+        }
+        //Default color
+        selectedColor = red
+    }
+
     //Set up layout buttons
     private fun setButtons() {
         //Allow to draw on screen
@@ -73,6 +100,10 @@ class FragmentSketches : Fragment() {
         //Introduces annotation after select checks in dialog
         binding.buttonAnnotations.setOnClickListener {// > Annotate
             showAttributesDialog()
+        }
+        //Edit paint style
+        binding.buttonPalette.setOnClickListener {
+            showPaletteDialog()
         }
         //Stores file in app internal storage
         binding.buttonSave.setOnClickListener {// > Save
@@ -88,7 +119,7 @@ class FragmentSketches : Fragment() {
             binding.drawingView.startMoving()
         }
         //todo Test copy
-        binding.buttonCopy.setOnClickListener{
+        binding.buttonCopy.setOnClickListener {
             binding.drawingView.copyLast()
         }
         //Undo last change
@@ -123,6 +154,133 @@ class FragmentSketches : Fragment() {
                 }
             }
         })
+    }
+
+    private fun showPaletteDialog() {
+
+        bindingDialogPalette = DialogEditPaintBinding.inflate(layoutInflater)
+
+        //Highlight the current selected color
+        switchSelectedColor(selectedColor)
+
+        bindingDialogPalette.colorSwatchWhite.setOnClickListener {
+            deselectOldColor(selectedColor)
+            switchSelectedColor(white)
+        }
+        bindingDialogPalette.colorSwatchRed.setOnClickListener {
+            deselectOldColor(selectedColor)
+            switchSelectedColor(red)
+        }
+        bindingDialogPalette.colorSwatchOcher.setOnClickListener {
+            deselectOldColor(selectedColor)
+            switchSelectedColor(ocher)
+        }
+        bindingDialogPalette.colorSwatchBlue.setOnClickListener {
+            deselectOldColor(selectedColor)
+            switchSelectedColor(blue)
+        }
+        bindingDialogPalette.colorSwatchGreen.setOnClickListener {
+            deselectOldColor(selectedColor)
+            switchSelectedColor(green)
+        }
+
+        val alertDialogFile = context?.let {
+
+            AlertDialog.Builder(it)
+                .setTitle("Style")
+                .setView(bindingDialogPalette.root)
+                .setPositiveButton("Ok") { _, _ ->
+                    Log.d("Navio_Color", "${selectedColor?.color.toString()}")
+                    binding.drawingView.selectColor(selectedColor.color)
+                }
+                .setNegativeButton("Cancel", null)
+                .create()
+        }
+        alertDialogFile?.show()
+    }
+
+    private fun switchSelectedColor(color: ColorDrawable) {
+
+        Log.d("Navio_Switch", "${color.color}")
+        when (color) {
+            white -> {
+                bindingDialogPalette.colorSwatchWhite.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_white
+                    )
+            }
+            red -> {
+                bindingDialogPalette.colorSwatchRed.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_red
+                    )
+            }
+            ocher -> {
+                bindingDialogPalette.colorSwatchOcher.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_ocher
+                    )
+            }
+            blue -> {
+                bindingDialogPalette.colorSwatchBlue.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_blue
+                    )
+            }
+            green -> {
+                bindingDialogPalette.colorSwatchGreen.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_green
+                    )
+            }
+        }
+        //Select the new color
+        selectedColor = color
+    }
+
+    private fun deselectOldColor(color: ColorDrawable) {
+        when (color) {
+            white -> {
+                bindingDialogPalette.colorSwatchWhite.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_white_dark
+                    )
+            }
+            red -> {
+                bindingDialogPalette.colorSwatchRed.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_red_dark
+                    )
+            }
+            ocher -> {
+                bindingDialogPalette.colorSwatchOcher.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_ocher_dark
+                    )
+            }
+            blue -> {
+                bindingDialogPalette.colorSwatchBlue.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_blue_dark
+                    )
+            }
+            green -> {
+                bindingDialogPalette.colorSwatchGreen.background =
+                    ContextCompat.getDrawable(
+                        requireContext(),
+                        R.drawable.color_blob_green_dark
+                    )
+            }
+        }
     }
 
     private fun showNameDialog(callback: OnTextPassed) {

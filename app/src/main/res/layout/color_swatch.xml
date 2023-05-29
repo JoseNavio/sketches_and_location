@@ -4,22 +4,11 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="Select attributes: "
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
     <View
         android:id="@+id/color_swatch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:background="@drawable/color_swatch" />
+        android:background="@drawable/color_blob_red" />
 
 </LinearLayout>
