@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape xmlns:android="http://schemas.android.com/apk/res/android"
+            android:shape="rectangle">
+            <solid android:color="@color/darker_red" />
+            <corners android:radius="@dimen/margin_small" />
+        </shape>
+    </item>
+    <item
+        android:id="@+id/color_top"
+        android:bottom="@dimen/swatch_shadow_dimension"
+        android:left="@dimen/swatch_shadow_dimension"
+        android:right="@dimen/swatch_shadow_dimension"
+        android:top="@dimen/swatch_shadow_dimension">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/red_dark" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+</layer-list>
