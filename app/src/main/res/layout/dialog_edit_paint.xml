@@ -56,6 +56,16 @@
         </LinearLayout>
 
         <com.google.android.material.slider.Slider
+            android:id="@+id/slider_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/margin_medium"
+            android:layout_marginBottom="@dimen/margin_medium"
+            app:trackColor="@color/white"
+            app:thumbColor="@color/beige" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_stroke"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/margin_medium"

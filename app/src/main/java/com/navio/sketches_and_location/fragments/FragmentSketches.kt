@@ -31,6 +31,8 @@ class FragmentSketches : Fragment() {
     private lateinit var binding: FragmentSketchesLayoutBinding
     private lateinit var bindingDialogPalette: DialogEditPaintBinding
     private lateinit var selectedColor: ColorDrawable
+    private var sliderValue: Float = 100f
+    private var sliderStroke: Float = 10f
 
     //Load colors
     private lateinit var white: ColorDrawable
@@ -183,6 +185,14 @@ class FragmentSketches : Fragment() {
             deselectOldColor(selectedColor)
             switchSelectedColor(green)
         }
+        //Slider setup
+        bindingDialogPalette.sliderText.value = sliderValue
+        bindingDialogPalette.sliderText.valueFrom = 50f
+        bindingDialogPalette.sliderText.valueTo = 300f
+
+        bindingDialogPalette.sliderStroke.value = sliderStroke
+        bindingDialogPalette.sliderStroke.valueFrom = 5f
+        bindingDialogPalette.sliderStroke.valueTo = 30f
 
         val alertDialogFile = context?.let {
 
@@ -190,8 +200,14 @@ class FragmentSketches : Fragment() {
                 .setTitle("Style")
                 .setView(bindingDialogPalette.root)
                 .setPositiveButton("Ok") { _, _ ->
-                    Log.d("Navio_Color", "${selectedColor?.color.toString()}")
+                    //Changes color
                     binding.drawingView.selectColor(selectedColor.color)
+                    //Changes text size
+                    sliderValue = bindingDialogPalette.sliderText.value
+                    binding.drawingView.selectTextSize(sliderValue)
+                    //Changes stroke size
+                    sliderStroke = bindingDialogPalette.sliderStroke.value
+                    binding.drawingView.selectStrokeSize(sliderStroke)
                 }
                 .setNegativeButton("Cancel", null)
                 .create()
