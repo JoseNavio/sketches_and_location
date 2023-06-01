@@ -3,6 +3,7 @@ package com.navio.sketches_and_location.fragments
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -15,6 +16,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import com.navio.sketches_and_location.R
 import com.navio.sketches_and_location.data.AnnotationCanvas
 import com.navio.sketches_and_location.data.CommentCanvas
@@ -23,8 +25,11 @@ import com.navio.sketches_and_location.databinding.DialogEditPaintBinding
 import com.navio.sketches_and_location.databinding.DialogFileNameBinding
 import com.navio.sketches_and_location.databinding.DialogInsertTextBinding
 import com.navio.sketches_and_location.databinding.FragmentSketchesLayoutBinding
+import java.io.File
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 class FragmentSketches : Fragment() {
 
@@ -40,7 +45,6 @@ class FragmentSketches : Fragment() {
     private lateinit var ocher: ColorDrawable
     private lateinit var blue: ColorDrawable
     private lateinit var green: ColorDrawable
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,7 +113,7 @@ class FragmentSketches : Fragment() {
         }
         //Stores file in app internal storage
         binding.buttonSave.setOnClickListener {// > Save
-            val imageBitmap = BitmapFactory.decodeResource(resources, R.raw.tiger)
+            val imageBitmap = BitmapFactory.decodeResource(resources, R.raw.foto)
             showNameDialog(object : OnTextPassed {
                 override fun onTextPassed(name: String) {
                     saveAfterGettingName(name, imageBitmap)
@@ -398,13 +402,21 @@ class FragmentSketches : Fragment() {
                         checkCount++
                     }
                     if (date.isChecked) {
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm")
+                        val currentDate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            LocalDateTime.now()
+                                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm"))
+                        } else {
+                            //todo Check if this works
+                            val dateFormat =
+                                SimpleDateFormat("yyyy-MM-dd hh:mm", Locale.getDefault())
+                            dateFormat.format(Date())
+                        }
                         attributes.add(
                             CommentCanvas(
 
                                 0f,
                                 100f * checkCount,
-                                LocalDateTime.now().format(formatter)
+                                currentDate
                             )
                         )
                     }
@@ -443,7 +455,11 @@ class FragmentSketches : Fragment() {
 
     //Why I cannot set image directly?
     private fun visualizeImage(imageID: Int) {
-        binding.imageContainer.setImageResource(imageID)
+        //binding.imageContainer.setImageResource(imageID)
+        val externalDir = requireContext().getExternalFilesDir(null)
+        Glide.with(requireContext())
+            .load(File(externalDir, "foto.jpg"))
+            .into(binding.imageContainer)
     }
 
     companion object {

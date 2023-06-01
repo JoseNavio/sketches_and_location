@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+    <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
     <!--        android:id="@+id/button_test"-->
     <!--        android:layout_width="@dimen/image_button_width"-->
     <!--        android:layout_height="@dimen/image_button_height"-->
